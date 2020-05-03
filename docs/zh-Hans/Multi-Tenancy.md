@@ -172,11 +172,11 @@ namespace MyCompany.MyProject
             {
                 options.Tenants = new[]
                 {
-                    new TenantInformation(
+                    new TenantConfiguration(
                         Guid.Parse("446a5211-3d72-4339-9adc-845151f8ada0"), //Id
                         "tenant1" //Name
                     ),
-                    new TenantInformation(
+                    new TenantConfiguration(
                         Guid.Parse("25388015-ef1c-4355-9c18-f6b6ddbaf89d"), //Id
                         "tenant2" //Name
                     )
@@ -252,7 +252,7 @@ TODO: This package implements ITenantStore using a real database...
 
 #### 租户信息
 
-ITenantStore跟 **TenantInformation**类一起工作,并且包含了几个租户属性:
+ITenantStore跟 **TenantConfiguration**类一起工作,并且包含了几个租户属性:
 
 * **Id**:租户的唯一Id.
 * **Name**: 租户的唯一名称.
@@ -343,8 +343,8 @@ namespace MyCompany.MyProject
         {
             Configure<AbpTenantResolveOptions>(options =>
             {
-                //子域名格式: {0}.mydomain.com (作为最高优先级解析器添加)
-                options.TenantResolvers.Insert(0, new DomainTenantResolver("{0}.mydomain.com"));
+                //子域名格式: {0}.mydomain.com (作为第二优先级解析器添加, 位于CurrentUserTenantResolveContributor之后)
+                options.TenantResolvers.Insert(1, new DomainTenantResolver("{0}.mydomain.com"));
             });
 
             //...
@@ -355,7 +355,7 @@ namespace MyCompany.MyProject
 
 {0}是用来确定当前租户唯一名称的占位符.
 
-你可以使用下面的方法,代替``options.TenantResolvers.Insert(0, new DomainTenantResolver("{0}.mydomain.com"));``:
+你可以使用下面的方法,代替``options.TenantResolvers.Insert(1, new DomainTenantResolver("{0}.mydomain.com"));``:
 
 ````C#
 options.AddDomainTenantResolver("{0}.mydomain.com");

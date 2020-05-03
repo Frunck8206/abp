@@ -63,7 +63,7 @@ MySQL连接字符串与SQL Server连接字符串不同. 所以检查你的解决
 
 ## 更改迁移DbContext
 
-MySQL DBMS与SQL Server有一些细微的差异. 某些模块数据库映射配置(尤其是字段长度)会导致MySQL出现问题. 例如某些[IdentityServer模块](Modules/IdentityServer.md)表就存在这样的问题,它提供了一个选项可以根据您的DBMS配置字段.
+MySQL DBMS与SQL Server有一些细微的差异. 某些模块数据库映射配置(尤其是字段长度)会导致MySQL出现问题. 例如某些[IdentityServer模块](Modules/IdentityServer.md)表就存在这样的问题,它提供了一个选项可以根据你的DBMS配置字段.
 
 启动模板包含*YourProjectName*MigrationsDbContext,它负责维护和迁移数据库架构. 此DbContext基本上调用依赖模块的扩展方法来配置其数据库表.
 
@@ -92,3 +92,17 @@ builder.ConfigureIdentityServer(options =>
 ## 运行应用程序
 
 它已准备就绪, 只需要运行该应用程序与享受编码.
+
+## DBMS限制
+
+不同的DBMS可能存在一些限制, 如字段名称的最大长度, 索引长度等等. 
+模块可能提供了一些内置的解决方案. 你可以通过`ModelBuilder`来配置它 如: Identity Server模块
+
+```csharp
+builder.ConfigureIdentityServer(options =>
+{
+    options.DatabaseProvider = EfCoreDatabaseProvider.MySql;
+});
+```
+
+相关讨论: https://github.com/abpframework/abp/issues/1920

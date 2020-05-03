@@ -142,6 +142,20 @@ myGroup.AddPermission(
 );
 ```
 
+#### Enable/Disable Permissions
+
+A permission is enabled by default. It is possible to disable a permission. A disabled permission will be prohibited for everyone. You can still check for the permission, but it will always return prohibited.
+
+Example definition:
+
+````csharp
+myGroup.AddPermission("Author_Management", isEnabled: false);
+````
+
+You normally don't need to define a disabled permission (unless you temporary want disable a feature of your application). However, you may want to disable a permission defined in a depended module. In this way you can disable the related application functionality. See the "*Changing Permission Definitions of a Depended Module*" section below for an example usage.
+
+> Note: Checking an undefined permission will throw an exception while a disabled permission check simply returns prohibited (false).
+
 #### Child Permissions
 
 A permission may have child permissions. It is especially useful when you want to create a hierarchical permission tree where a permission may have additional sub permissions which are available only if the parent permission has been granted.
@@ -203,6 +217,22 @@ public class AuthorAppService : ApplicationService, IAuthorAppService
 If you define and register a policy to the ASP.NET Core authorization system with the same name of a permission, your policy will override the existing permission. This is a powerful way to extend the authorization for a pre-built module that you are using in your application.
 
 See [policy based authorization](https://docs.microsoft.com/en-us/aspnet/core/security/authorization/policies) document to learn how to define a custom policy.
+
+### Changing Permission Definitions of a Depended Module
+
+A class deriving from the `PermissionDefinitionProvider` (just like the example above) can also get existing permission definitions (defined by the depended [modules](Module-Development-Basics.md)) and change their definitions.
+
+Example:
+
+````csharp
+context
+    .GetPermissionOrNull(IdentityPermissions.Roles.Delete)
+    .IsEnabled = false;
+````
+
+When you write this code inside your permission definition provider, it finds the "role deletion" permission of the [Identity Module](Modules/Identity.md) and disabled the permission, so no one can delete a role on the application.
+
+> Tip: It is better to check the value returned by the `GetPermissionOrNull` method since it may return null if the given permission was not defined. 
 
 ## IAuthorizationService
 
@@ -335,10 +365,10 @@ A permission value provider should return one of the following values from the `
 - `PermissionGrantResult.Prohibited` is returned to prohibit the user for the permission. If any of the providers return `Prohibited`, the result will always be `Prohibited`. Doesn't matter what other providers return.
 - `PermissionGrantResult.Undefined` is returned if this value provider could not decide about the permission value. Return this to let other providers check the permission.
 
-Once a provider is defined, it should be added to the `PermissionOptions` as shown below:
+Once a provider is defined, it should be added to the `AbpPermissionOptions` as shown below:
 
 ```csharp
-Configure<PermissionOptions>(options =>
+Configure<AbpPermissionOptions>(options =>
 {
     options.ValueProviders.Add<SystemAdminPermissionValueProvider>();
 });
