@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using JetBrains.Annotations;
 
@@ -33,6 +33,26 @@ namespace Volo.Abp.Localization
                 CultureInfo.CurrentCulture = currentCulture;
                 CultureInfo.CurrentUICulture = currentUiCulture;
             });
+        }
+
+        public static bool IsRtl => CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+
+        public static bool IsValidCultureCode(string cultureCode)
+        {
+            if (cultureCode.IsNullOrWhiteSpace())
+            {
+                return false;
+            }
+
+            try
+            {
+                CultureInfo.GetCultureInfo(cultureCode);
+                return true;
+            }
+            catch (CultureNotFoundException)
+            {
+                return false;
+            }
         }
 
         public static string GetBaseCultureName(string cultureName)

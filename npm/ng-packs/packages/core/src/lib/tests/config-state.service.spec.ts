@@ -29,43 +29,6 @@ const CONFIG_STATE_DATA = {
   requirements: {
     layouts: [null, null, null],
   },
-  routes: [
-    {
-      name: '::Menu:Home',
-      path: '',
-      children: [],
-      url: '/',
-    },
-    {
-      name: 'AbpAccount::Menu:Account',
-      path: 'account',
-      invisible: true,
-      layout: 'application',
-      children: [
-        {
-          path: 'login',
-          name: 'AbpAccount::Login',
-          order: 1,
-          url: '/account/login',
-        },
-      ],
-      url: '/account',
-    },
-  ],
-  flattedRoutes: [
-    {
-      name: '::Menu:Home',
-      path: '',
-      children: [],
-      url: '/',
-    },
-    {
-      name: '::Menu:Identity',
-      path: 'identity',
-      children: [],
-      url: '/identity',
-    },
-  ],
   localization: {
     values: {
       MyProjectName: {
@@ -83,6 +46,26 @@ const CONFIG_STATE_DATA = {
         flagIcon: null,
       },
     ],
+    currentCulture: {
+      displayName: 'English',
+      englishName: 'English',
+      threeLetterIsoLanguageName: 'eng',
+      twoLetterIsoLanguageName: 'en',
+      isRightToLeft: false,
+      cultureName: 'en',
+      name: 'en',
+      nativeName: 'English',
+      dateTimeFormat: {
+        calendarAlgorithmType: 'SolarCalendar',
+        dateTimeFormatLong: 'dddd, MMMM d, yyyy',
+        shortDatePattern: 'M/d/yyyy',
+        fullDateTimePattern: 'dddd, MMMM d, yyyy h:mm:ss tt',
+        dateSeparator: '/',
+        shortTimePattern: 'h:mm tt',
+        longTimePattern: 'h:mm:ss tt',
+      },
+    },
+    defaultResourceName: null,
   },
   auth: {
     policies: {
@@ -102,6 +85,7 @@ const CONFIG_STATE_DATA = {
     id: null,
     tenantId: null,
     userName: null,
+    email: null,
   },
   features: {
     values: {},

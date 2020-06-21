@@ -14,7 +14,7 @@ else if UI == "NG"
   DB="mongodb"
   DB_Text="MongoDB"
   UI_Text="angular"
-else 
+else
   DB ="?"
   UI_Text="?"
 end
@@ -26,7 +26,7 @@ In this tutorial series, you will build an ABP application named `Acme.BookStore
 
 The ASP.NET Core {{UI_Value}} tutorial series consists of 3 parts:
 
-- **Part-1: Creating the project and book list page (this tutorial)** 
+- **Part-1: Creating the project and book list page (this tutorial)**
 - [Part-2: Creating, updating and deleting books](part-2.md)
 - [Part-3: Integration tests](part-3.md)
 
@@ -106,7 +106,7 @@ This is how the layered solution structure looks like:
 
 ![bookstore-visual-studio-solution](./images/bookstore-solution-structure-{{UI_Text}}.png)
 
-Check out the [solution structure](../startup-templates/application#solution-structure) section to understand the structure in details. 
+Check out the [solution structure](../startup-templates/application#solution-structure) section to understand the structure in details.
 
 ### Create the book entity
 
@@ -444,7 +444,7 @@ using Volo.Abp.Application.Services;
 
 namespace Acme.BookStore
 {
-    public interface IBookAppService : 
+    public interface IBookAppService :
         ICrudAppService< //Defines CRUD methods
             BookDto, //Used to show books
             Guid, //Primary key of the book entity
@@ -473,12 +473,12 @@ using Volo.Abp.Domain.Repositories;
 
 namespace Acme.BookStore
 {
-    public class BookAppService : 
+    public class BookAppService :
         CrudAppService<Book, BookDto, Guid, PagedAndSortedResultRequestDto,
                        CreateUpdateBookDto, CreateUpdateBookDto>,
         IBookAppService
     {
-        public BookAppService(IRepository<Book, Guid> repository) 
+        public BookAppService(IRepository<Book, Guid> repository)
             : base(repository)
         {
 
@@ -564,17 +564,15 @@ Open the `Index.cshtml` and change the whole content as shown below:
 ````html
 @page
 @using Acme.BookStore.Web.Pages.Books
-@inherits Acme.BookStore.Web.Pages.BookStorePage
 @model IndexModel
 
 <h2>Books</h2>
 ````
 
-* This code changes the default inheritance of the Razor View Page Model so it **inherits** from the `BookStorePage` class (instead of `PageModel`).  The `BookStorePage` class which comes with the startup template, provides some shared properties/methods used by all pages.
 
 * Set the `IndexModel`'s namespace to `Acme.BookStore.Pages.Books`  in `Index.cshtml.cs`.
 
-  
+
 
 **Index.cshtml.cs:**
 
@@ -602,12 +600,12 @@ Open the `BookStoreMenuContributor` class in the `Menus` folder and add the foll
 namespace Acme.BookStore.Web.Menus
 {
     public class BookStoreMenuContributor : IMenuContributor
-    { 
+    {
         private async Task ConfigureMainMenuAsync(MenuConfigurationContext context)
         {
             //<-- added the below code
             context.Menu.AddItem(
-                new ApplicationMenuItem("BooksStore", l["Menu:BookStore"])
+                new ApplicationMenuItem("BooksStore", l["Menu:BookStore"], icon: "fa fa-book")
                     .AddItem(
                         new ApplicationMenuItem("BooksStore.Books", l["Menu:Books"], url: "/Books")
                     )
@@ -646,7 +644,16 @@ Open the `en.json` (*English translations*) file and add the below localization 
     "Type": "Type",
     "Price": "Price",
     "CreationTime": "Creation time",
-    "AreYouSureToDelete": "Are you sure you want to delete this item?"
+    "AreYouSureToDelete": "Are you sure you want to delete this item?",
+    "Enum:BookType:0": "Undefined",
+    "Enum:BookType:1": "Adventure",
+    "Enum:BookType:2": "Biography",
+    "Enum:BookType:3": "Dystopia",
+    "Enum:BookType:4": "Fantastic",
+    "Enum:BookType:5": "Horror",
+    "Enum:BookType:6": "Science",
+    "Enum:BookType:7": "ScienceFiction",
+    "Enum:BookType:8": "Poetry"
   }
 }
 ````
@@ -672,7 +679,6 @@ Change the `Pages/Books/Index.cshtml` as following:
 
 ````html
 @page
-@inherits Acme.BookStore.Web.Pages.BookStorePage
 @model Acme.BookStore.Web.Pages.Books.IndexModel
 @section scripts
 {
@@ -716,7 +722,11 @@ $(function () {
         ajax: abp.libs.datatables.createAjax(acme.bookStore.book.getList),
         columnDefs: [
             { data: "name" },
-            { data: "type" },
+            { data: "type",
+              render: function(data){
+                return l('Enum:BookType:' + data);
+              }
+            },
             { data: "publishDate" },
             { data: "price" },
             { data: "creationTime" }
@@ -736,7 +746,7 @@ It's end of this part. The final UI of this work is shown as below:
 
 {{end}}
 
-{{if UI == "NG"}} 
+{{if UI == "NG"}}
 
 ### Angular development
 #### Create the books page
@@ -756,28 +766,28 @@ Open a new command line interface (terminal window) and go to your `angular` fol
 yarn
 ```
 
-#### BooksModule
+#### BookModule
 
-Run the following command line to create a new module, named `BooksModule`:
+Run the following command line to create a new module, named `BookModule`:
 
 ```bash
-yarn ng generate module books --route books --module app.module
+yarn ng generate module book --routing true
 ```
 
-![Generating books module](./images/bookstore-creating-books-module-terminal.png)
+![Generating books module](./images/bookstore-creating-book-module-terminal.png)
 
 #### Routing
 
-Open the `app-routing.module.ts` file in `src\app` folder. Add the new `import` and replace `books` path as shown below
+Open the `app-routing.module.ts` file in `src\app` folder. Add the new `import` and add a route as shown below
 
 ```js
 import { ApplicationLayoutComponent } from '@abp/ng.theme.basic'; //==> added this line to imports <==
 
-//...replaced original books path with the below
+//...added books path with the below to the routes array
 {
   path: 'books',
   component: ApplicationLayoutComponent,
-  loadChildren: () => import('./books/books.module').then(m => m.BooksModule),
+  loadChildren: () => import('./book/book.module').then(m => m.BookModule),
   data: {
     routes: {
       name: '::Menu:Books',
@@ -789,71 +799,50 @@ import { ApplicationLayoutComponent } from '@abp/ng.theme.basic'; //==> added th
 
 * The `ApplicationLayoutComponent` configuration sets the application layout to the new page. We added the `data` object. The `name` is the menu item name and the `iconClass` is the icon of the menu item.
 
-Run `yarn start` and wait for Angular to serve the application:
-
-```bash
-yarn start
-```
-
-Open the browser and navigate to http://localhost:4200/books. You'll see a blank page saying "*books works!*".
-
-![initial-books-page](./images/bookstore-initial-books-page-with-layout.png)
-
 #### Book list component
 
-Replace the `books.component.html` in the `app\books` folder with the following content:
-
-```html
-<router-outlet></router-outlet>
-```
-
-Then run the command below on the terminal in the root folder to generate a new component, named book-list:
+Run the command below on the terminal in the root folder to generate a new component, named book-list:
 
 ```bash
-yarn ng generate component books/book-list
+yarn ng generate component book/book-list
 ```
 
 ![Creating books list](./images/bookstore-creating-book-list-terminal.png)
 
-Open `books.module.ts` file in the `app\books` folder and replace the content as below:
+Open `book.module.ts` file in the `app\book` folder and replace the content as below:
 
 ```js
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-import { BooksRoutingModule } from './books-routing.module';
-import { BooksComponent } from './books.component';
+import { BookRoutingModule } from './book-routing.module';
 import { BookListComponent } from './book-list/book-list.component';
 import { SharedModule } from '../shared/shared.module'; //<== added this line ==>
 
 @NgModule({
-  declarations: [BooksComponent, BookListComponent],
+  declarations: [BookListComponent],
   imports: [
     CommonModule,
-    BooksRoutingModule,
+    BookRoutingModule,
     SharedModule, //<== added this line ==>
-  ]
+  ],
 })
-export class BooksModule { }
+export class BookModule {}
 ```
 
 * We imported `SharedModule` and added to `imports` array.
 
-Open `books-routing.module.ts`  file in the `app\books` folder and replace the content as below:
+Open `book-routing.module.ts`  file in the `app\book` folder and replace the content as below:
 
 ```js
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
+import { BookListComponent } from './book-list/book-list.component'; // <== added this line ==>
 
-import { BooksComponent } from './books.component';
-import { BookListComponent } from './book-list/book-list.component'; //<== added this line ==>
-
-//<== replaced routes ==>
+// <== replaced routes ==>
 const routes: Routes = [
   {
     path: '',
-    component: BooksComponent,
-    children: [{ path: '', component: BookListComponent }],
+    component: BookListComponent,
   },
 ];
 
@@ -861,36 +850,42 @@ const routes: Routes = [
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
-export class BooksRoutingModule { }
+export class BookRoutingModule { }
 ```
 
 * We imported `BookListComponent` and replaced `routes` const.
 
-We'll see **book-list works!**  text on the books page:
+Run `yarn start` and wait for Angular to serve the application:
+
+```bash
+yarn start
+```
+
+Open the browser and navigate to http://localhost:4200/books. We'll see **book-list works!**  text on the books page:
 
 ![Initial book list page](./images/bookstore-initial-book-list-page.png)
 
-#### Create BooksState
+#### Create BookState
 
 Run the following command in the terminal to create a new state, named `BooksState`:
 
 ```bash
-npx @ngxs/cli --name books --directory src/app/books
+npx @ngxs/cli --name book --directory src/app/book
 ```
 
-* This command creates `books.state.ts` and `books.actions.ts` files in the `src/app/books/state` folder. See the [NGXS CLI documentation](https://www.ngxs.io/plugins/cli).
+* This command creates `book.state.ts` and `book.actions.ts` files in the `src/app/book/state` folder. See the [NGXS CLI documentation](https://www.ngxs.io/plugins/cli).
 
-Import the `BooksState` to the `app.module.ts` in the `src/app` folder and then add the `BooksState` to `forRoot` static method of `NgxsModule` as an array element of the first parameter of the method.
+Import the `BookState` to the `app.module.ts` in the `src/app` folder and then add the `BookState` to `forRoot` static method of `NgxsModule` as an array element of the first parameter of the method.
 
 ```js
 // ...
-import { BooksState } from './books/state/books.state'; //<== imported BooksState ==>
+import { BookState } from './books/state/book.state'; //<== imported BookState ==>
 
 @NgModule({
   imports: [
     // other imports
 
-    NgxsModule.forRoot([BooksState]), //<== added BooksState ==>
+    NgxsModule.forRoot([BookState]), //<== added BookState ==>
 
     //other imports
   ],
@@ -919,46 +914,46 @@ The generated files looks like below:
 
 Actions can either be thought of as a command which should trigger something to happen, or as the resulting event of something that has already happened. [See NGXS Actions documentation](https://www.ngxs.io/concepts/actions).
 
-Open the `books.actions.ts` file in `app/books/state` folder and replace the content below:
+Open the `book.actions.ts` file in `app/book/state` folder and replace the content below:
 
 ```js
 export class GetBooks {
-  static readonly type = '[Books] Get';
+  static readonly type = '[Book] Get';
 }
 ```
 
-#### Implement BooksState
+#### Implement BookState
 
-Open the `books.state.ts` file in `app/books/state` folder and replace the content below:
+Open the `book.state.ts` file in `app/book/state` folder and replace the content below:
 
 ```js
 import { PagedResultDto } from '@abp/ng.core';
 import { State, Action, StateContext, Selector } from '@ngxs/store';
-import { GetBooks } from './books.actions';
-import { BookService } from '../../app/shared/services';
+import { GetBooks } from './book.actions';
+import { BookService } from '../services';
 import { tap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { BookDto } from '../../app/shared/models';
+import { BookDto } from '../models';
 
-export class BooksStateModel {
+export class BookStateModel {
   public book: PagedResultDto<BookDto>;
 }
 
-@State<BooksStateModel>({
-  name: 'BooksState',
-  defaults: { book: {} } as BooksStateModel,
+@State<BookStateModel>({
+  name: 'BookState',
+  defaults: { book: {} } as BookStateModel,
 })
 @Injectable()
-export class BooksState {
+export class BookState {
   @Selector()
-  static getBooks(state: BooksStateModel) {
+  static getBooks(state: BookStateModel) {
     return state.book.items || [];
   }
 
   constructor(private bookService: BookService) {}
 
   @Action(GetBooks)
-  get(ctx: StateContext<BooksStateModel>) {
+  get(ctx: StateContext<BookStateModel>) {
     return this.bookService.getListByInput().pipe(
       tap((booksResponse) => {
         ctx.patchState({
@@ -969,22 +964,23 @@ export class BooksState {
   }
 }
 ```
-* We added the book property to BooksStateModel model.
-* We added the `GetBooks` action that retrieves the books data via `BooksService` that generated via ABP CLI and patches the state.
+
+* We added the book property to BookStateModel model.
+* We added the `GetBooks` action that retrieves the book data via `BookService` that generated via ABP CLI and patches the state.
 * `NGXS` requires to return the observable without subscribing it in the get function.
 
 #### BookListComponent
 
-Open the `book-list.component.ts` file in `app\books\book-list` folder and replace the content as below:
+Open the `book-list.component.ts` file in `app\book\book-list` folder and replace the content as below:
 
 ```js
 import { Component, OnInit } from '@angular/core';
 import { Select, Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { BookDto, BookType } from '../../app/shared/models';
-import { GetBooks } from '../state/books.actions';
-import { BooksState } from '../state/books.state';
+import { BookDto, BookType } from '../models';
+import { GetBooks } from '../state/book.actions';
+import { BookState } from '../state/book.state';
 
 @Component({
   selector: 'app-book-list',
@@ -992,7 +988,7 @@ import { BooksState } from '../state/books.state';
   styleUrls: ['./book-list.component.scss'],
 })
 export class BookListComponent implements OnInit {
-  @Select(BooksState.getBooks)
+  @Select(BookState.getBooks)
   books$: Observable<BookDto[]>;
 
   booksType = BookType;
@@ -1018,7 +1014,7 @@ export class BookListComponent implements OnInit {
 * We added the `get` function that updates store to get the books.
 * See the [Dispatching actions](https://ngxs.gitbook.io/ngxs/concepts/store#dispatching-actions) and [Select](https://ngxs.gitbook.io/ngxs/concepts/select) on the `NGXS` documentation for more information on these `NGXS` features.
 
-Open the `book-list.component.html` file in `app\books\book-list` folder and replace the content as below:
+Open the `book-list.component.html` file in `app\book\book-list` folder and replace the content as below:
 
 ```html
 <div class="card">

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Elasticsearch.Net;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp;
@@ -14,10 +15,14 @@ namespace Volo.Docs.Documents.FullSearch.Elastic
     {
         private readonly IElasticClientProvider _clientProvider;
         private readonly DocsElasticSearchOptions _options;
+        private readonly ILogger<ElasticDocumentFullSearch> _logger;
 
-        public ElasticDocumentFullSearch(IElasticClientProvider clientProvider, IOptions<DocsElasticSearchOptions> options)
+        public ElasticDocumentFullSearch(IElasticClientProvider clientProvider,
+            IOptions<DocsElasticSearchOptions> options,
+            ILogger<ElasticDocumentFullSearch> logger)
         {
             _clientProvider = clientProvider;
+            _logger = logger;
             _options = options.Value;
         }
 
@@ -90,6 +95,48 @@ namespace Volo.Docs.Documents.FullSearch.Elastic
 
             HandleError(await _clientProvider.GetClient()
                 .DeleteAsync(DocumentPath<Document>.Id(id), x => x.Index(_options.IndexName), cancellationToken));
+        }
+
+        public async Task DeleteAllAsync(CancellationToken cancellationToken = default)
+        {
+            ValidateElasticSearchEnabled();
+
+            var request = new DeleteByQueryRequest(_options.IndexName)
+            {
+                Query = new MatchAllQuery()
+            };
+
+            HandleError(await _clientProvider.GetClient()
+                .DeleteByQueryAsync(request, cancellationToken));
+        }
+
+        public async Task DeleteAllByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+        {
+            ValidateElasticSearchEnabled();
+
+            var request = new DeleteByQueryRequest(_options.IndexName)
+            {
+                Query = new BoolQuery
+                {
+                    Filter = new QueryContainer[]
+                    {
+                        new BoolQuery
+                        {
+                            Must = new QueryContainer[]
+                            {
+                                new TermQuery
+                                {
+                                    Field = "projectId",
+                                    Value = projectId
+                                }
+                            }
+                        }
+                    }
+                },
+            };
+
+            HandleError(await _clientProvider.GetClient()
+                .DeleteByQueryAsync(request, cancellationToken));
         }
 
         public async Task<List<EsDocument>> SearchAsync(string context, Guid projectId, string languageCode,
@@ -173,7 +220,8 @@ namespace Volo.Docs.Documents.FullSearch.Elastic
         {
             if (!response.ApiCall.Success)
             {
-                throw response.ApiCall.OriginalException;
+                _logger.LogError(response.ApiCall.OriginalException,
+                    "An error occurred in the elastic search api call.");
             }
         }
 

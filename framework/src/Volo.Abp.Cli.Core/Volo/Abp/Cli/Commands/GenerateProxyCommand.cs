@@ -13,6 +13,7 @@ using Volo.Abp.DependencyInjection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Volo.Abp.Reflection;
 
 namespace Volo.Abp.Cli.Commands
 {
@@ -20,6 +21,8 @@ namespace Volo.Abp.Cli.Commands
     {
         public static Dictionary<string, Dictionary<string, string>> propertyList = new Dictionary<string, Dictionary<string, string>>();
         public ILogger<GenerateProxyCommand> Logger { get; set; }
+        public static string outputPrefix = "src/app";
+        public static string output = "";
 
         protected TemplateProjectBuilder TemplateProjectBuilder { get; }
 
@@ -55,6 +58,12 @@ namespace Volo.Abp.Cli.Commands
             apiUrl += "/api/abp/api-definition?IncludeTypes=true";
 
             var uiFramework = GetUiFramework(commandLineArgs);
+
+            output = commandLineArgs.Options.GetOrNull(Options.Output.Short, Options.Output.Long);
+            if (!string.IsNullOrWhiteSpace(output) && !(output.EndsWith("/") || output.EndsWith("\\")))
+            { 
+                output += "/";
+            }
 
             WebClient client = new WebClient();
             string json = "";
@@ -98,16 +107,27 @@ namespace Volo.Abp.Cli.Commands
                 var rootPath = moduleItem.Key;
                 var apiName = apiNameList.Where(p => p.Key == rootPath).Select(p => p.Value).FirstOrDefault();
 
-                Logger.LogInformation($"{rootPath} directory is creating");
+                if (rootPath != "app")
+                {
+                    Logger.LogInformation($"{rootPath} directory is creating");
+                }                
 
-                Directory.CreateDirectory($"src/app/{rootPath}/shared/models");
-                Directory.CreateDirectory($"src/app/{rootPath}/shared/services");
+                if (rootPath == "app")
+                {
+                    outputPrefix = "src";
+                }
+                else
+                {
+                    outputPrefix = "src/app";
+                }
 
-                var serviceIndexList = new List<string>();
-                var modelIndexList = new List<string>();
+                Directory.CreateDirectory(output + $"{outputPrefix}/{rootPath}");
 
                 foreach (var controller in moduleValue.Root.ToList().Select(item => item.First))
                 {
+                    var serviceIndexList = new List<string>();
+                    var modelIndexList = new List<string>();
+
                     var serviceFileText = new StringBuilder();
 
                     serviceFileText.AppendLine("[firstTypeList]");
@@ -127,6 +147,12 @@ namespace Volo.Abp.Cli.Commands
 
                     var controllerName = (string)controller["controllerName"];
                     var controllerServiceName = controllerName.PascalToKebabCase() + ".service.ts";
+
+                    var controllerPathName = controllerName.ToLower().Replace("controller", "");
+                    controllerPathName = (controllerPathName.StartsWith(rootPath)) ? controllerPathName.Substring(rootPath.Length) : controllerPathName;
+
+                    Directory.CreateDirectory(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models");
+                    Directory.CreateDirectory(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/services");
 
                     foreach (var actionItem in controller["actions"])
                     {
@@ -157,7 +183,7 @@ namespace Volo.Abp.Cli.Commands
                             var isOptional = (bool)parameter["isOptional"];
                             var defaultValue = (string)parameter["defaultValue"];
 
-                            var modelIndex = CreateType(data, (string)parameter["type"], rootPath, modelIndexList);
+                            var modelIndex = CreateType(data, (string)parameter["type"], rootPath, modelIndexList, controllerPathName);
 
                             if (!string.IsNullOrWhiteSpace(modelIndex))
                             {
@@ -194,7 +220,7 @@ namespace Volo.Abp.Cli.Commands
                                             parameterModel = AddParameter(name, typeSimple, isOptional, defaultValue, bindingSourceId, parameterModel);
                                         }
 
-                                        modelIndex = CreateType(data, (string)parameterOnMethod["type"], rootPath, modelIndexList);
+                                        modelIndex = CreateType(data, (string)parameterOnMethod["type"], rootPath, modelIndexList, controllerPathName);
 
                                         if (!string.IsNullOrWhiteSpace(modelIndex))
                                         {
@@ -225,7 +251,7 @@ namespace Volo.Abp.Cli.Commands
                             foreach (var parameterItem in parameterModel.OrderBy(p => p.DisplayOrder))
                             {
                                 var parameterItemModelName = parameterItem.Type.PascalToKebabCase() + ".ts";
-                                var parameterItemModelPath = $"src/app/{rootPath}/shared/models/{parameterItemModelName}";
+                                var parameterItemModelPath = output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/{parameterItemModelName}";
                                 if (parameterItem.BindingSourceId == "body" && !File.Exists(parameterItemModelPath))
                                 {
                                     parameterItem.Type = "any";
@@ -262,7 +288,7 @@ namespace Volo.Abp.Cli.Commands
                                 var secondType = secondTypeArray[secondTypeArray.Length - 1].TrimEnd('>');
 
                                 var secondTypeModelName = secondType.PascalToKebabCase() + ".ts";
-                                var secondTypeModelPath = $"src/app/{rootPath}/shared/models/{secondTypeModelName}";
+                                var secondTypeModelPath = output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/{secondTypeModelName}";
                                 if (firstType == "List" && !File.Exists(secondTypeModelPath))
                                 {
                                     secondType = "any";
@@ -306,7 +332,7 @@ namespace Volo.Abp.Cli.Commands
                                 }
                             }
 
-                            var modelIndex = CreateType(data, returnValueType, rootPath, modelIndexList);
+                            var modelIndex = CreateType(data, returnValueType, rootPath, modelIndexList, controllerPathName);
 
                             if (!string.IsNullOrWhiteSpace(modelIndex))
                             {
@@ -359,26 +385,31 @@ namespace Volo.Abp.Cli.Commands
                     serviceFileText.AppendLine("}");
 
                     serviceFileText.Replace("[controllerName]", controllerName);
-                    File.WriteAllText($"src/app/{rootPath}/shared/services/{controllerServiceName}", serviceFileText.ToString());
+                    File.WriteAllText(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/services/{controllerServiceName}", serviceFileText.ToString());
+
+
+
+                    var serviceIndexFileText = new StringBuilder();
+
+                    foreach (var serviceIndexItem in serviceIndexList.Distinct())
+                    {
+                        serviceIndexFileText.AppendLine($"export * from './{serviceIndexItem}';");
+                    }
+
+                    File.WriteAllText(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/services/index.ts", serviceIndexFileText.ToString());
+
+                    if (modelIndexList.Count > 0)
+                    {
+                        var modelIndexFileText = new StringBuilder();
+
+                        foreach (var modelIndexItem in modelIndexList.Distinct())
+                        {
+                            modelIndexFileText.AppendLine($"export * from './{modelIndexItem}';");
+                        }
+
+                        File.WriteAllText(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/index.ts", modelIndexFileText.ToString());
+                    }
                 }
-
-                var serviceIndexFileText = new StringBuilder();
-
-                foreach (var serviceIndexItem in serviceIndexList.Distinct())
-                {
-                    serviceIndexFileText.AppendLine($"export * from './{serviceIndexItem}';");
-                }
-
-                File.WriteAllText($"src/app/{rootPath}/shared/services/index.ts", serviceIndexFileText.ToString());
-
-                var modelIndexFileText = new StringBuilder();
-
-                foreach (var modelIndexItem in modelIndexList.Distinct())
-                {
-                    modelIndexFileText.AppendLine($"export * from './{modelIndexItem}';");
-                }
-
-                File.WriteAllText($"src/app/{rootPath}/shared/models/index.ts", modelIndexFileText.ToString());
             }
 
             Logger.LogInformation("Completed!");
@@ -415,7 +446,7 @@ namespace Volo.Abp.Cli.Commands
             return moduleList;
         }
 
-        private static string CreateType(JObject data, string returnValueType, string rootPath, List<string> modelIndexList)
+        private static string CreateType(JObject data, string returnValueType, string rootPath, List<string> modelIndexList, string controllerPathName)
         {
             var type = data["types"][returnValueType];
 
@@ -425,30 +456,46 @@ namespace Volo.Abp.Cli.Commands
             }
 
             if (returnValueType.StartsWith("Volo.Abp.Application.Dtos")
-                 || returnValueType.StartsWith("System.Collections")
-                 || returnValueType == "System.String"
-                 || returnValueType == "System.Void"
-                 || returnValueType.Contains("System.Net.HttpStatusCode?")
-                 || returnValueType.Contains("IActionResult")
-                 || returnValueType.Contains("ActionResult")
-                 || returnValueType.Contains("IStringValueType")
-                 || returnValueType.Contains("IValueValidator")
-                 )
+             || returnValueType.StartsWith("System.Collections")
+             || returnValueType == "System.String"
+             || returnValueType == "System.Void"
+             || returnValueType.Contains("System.Net.HttpStatusCode?")
+             || returnValueType.Contains("IActionResult")
+             || returnValueType.Contains("ActionResult")
+             || returnValueType.Contains("IStringValueType")
+             || returnValueType.Contains("IValueValidator")
+               )
             {
-                return null;
+                if (returnValueType.Contains("<"))
+                {
+                    returnValueType = returnValueType.Split('<')[1].Split('>')[0];
+                    if (returnValueType.StartsWith("Volo.Abp.Application.Dtos")
+                     || returnValueType.StartsWith("System.Collections")
+                     || returnValueType == "System.String"
+                     || returnValueType == "System.Void"
+                     || returnValueType.Contains("System.Net.HttpStatusCode?")
+                     || returnValueType.Contains("IActionResult")
+                     || returnValueType.Contains("ActionResult")
+                     || returnValueType.Contains("IStringValueType")
+                     || returnValueType.Contains("IValueValidator")
+                     || returnValueType.Contains("Guid")
+                       )
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
             }
 
             var typeNameSplit = returnValueType.Split(".");
             var typeName = typeNameSplit[typeNameSplit.Length - 1];
 
-            if (typeName.Contains("HttpStatusCode"))
-            {
-
-            }
-
             var typeModelName = typeName.Replace("<", "").Replace(">", "").Replace("?", "").PascalToKebabCase() + ".ts";
 
-            var path = $"src/app/{rootPath}/shared/models/{typeModelName}";
+            var path = output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/{typeModelName}";
 
             var modelFileText = new StringBuilder();
 
@@ -470,7 +517,16 @@ namespace Volo.Abp.Cli.Commands
                         baseTypeKebabCase = "@abp/ng.core";
 
                         baseTypeName = baseType.Split("Volo.Abp.Application.Dtos")[1].Split("<")[0].TrimStart('.');
-                        customBaseTypeName = baseType.Split("Volo.Abp.Application.Dtos")[1].Replace("System.Guid", "string").TrimStart('.');
+                        customBaseTypeName = baseType.Split("Volo.Abp.Application.Dtos")[1].TrimStart('.');
+                        if (customBaseTypeName.Contains("<"))
+                        {
+                            var genericType = customBaseTypeName.Split("<")[1].TrimEnd('>');
+                            var customBaseType = Type.GetType(genericType);
+                            if (customBaseType != null)
+                            {
+                                customBaseTypeName = customBaseTypeName.Replace(genericType, TypeHelper.GetSimplifiedName(customBaseType));
+                            }
+                        }
                     }
 
                     if (baseTypeName.Contains("guid") || baseTypeName.Contains("Guid"))
@@ -478,10 +534,12 @@ namespace Volo.Abp.Cli.Commands
                         baseTypeName = "string";
                     }
 
+                    modelFileText.AppendLine(Environment.NewLine);
                     modelFileText.AppendLine($"import {{ {baseTypeName} }} from '{baseTypeKebabCase}';");
+                    
                     extends = "extends " + (!string.IsNullOrWhiteSpace(customBaseTypeName) ? customBaseTypeName : baseTypeName);
 
-                    var modelIndex = CreateType(data, baseType, rootPath, modelIndexList);
+                    var modelIndex = CreateType(data, baseType, rootPath, modelIndexList, controllerPathName);
                     if (!string.IsNullOrWhiteSpace(modelIndex))
                     {
                         modelIndexList.Add(modelIndex);
@@ -514,7 +572,7 @@ namespace Volo.Abp.Cli.Commands
                     propertyName = (char.ToLower(propertyName[0]) + propertyName.Substring(1));
                     var typeSimple = (string)property["typeSimple"];
 
-                    var modelIndex = CreateType(data, (string)property["type"], rootPath, modelIndexList);
+                    var modelIndex = CreateType(data, (string)property["type"], rootPath, modelIndexList, controllerPathName);
 
                     if (typeSimple.IndexOf("[") > -1 && typeSimple.IndexOf("]") > -1)
                     {
@@ -547,7 +605,7 @@ namespace Volo.Abp.Cli.Commands
                       )
                     {
                         var typeSimpleModelName = typeSimple.PascalToKebabCase() + ".ts";
-                        var modelPath = $"src/app/{rootPath}/shared/models/{typeSimpleModelName}";
+                        var modelPath = output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/{typeSimpleModelName}";
                         if (!File.Exists(modelPath))
                         {
                             typeSimple = "any" + (typeSimple.Contains("[]") ? "[]" : "");
@@ -561,11 +619,18 @@ namespace Volo.Abp.Cli.Commands
 
                     if (!string.IsNullOrWhiteSpace(modelIndex))
                     {
+                        var from = "../models";
                         var propertyTypeSplit = ((string)property["type"]).Split(".");
                         var propertyType = propertyTypeSplit[propertyTypeSplit.Length - 1];
-                        modelFileText.Insert(0, "");
-                        modelFileText.Insert(0, $"import {{ {propertyType} }} from '../models';");
-                        modelFileText.Insert(0, "");
+
+                        var propertyTypeKebabCase = propertyType.PascalToKebabCase();
+                        if (File.Exists(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/{propertyTypeKebabCase}.ts"))
+                        {
+                            from = "./" + propertyTypeKebabCase;
+                        }
+                         
+                        modelFileText.Insert(0, $"import {{ {propertyType} }} from '{from}';");
+                        modelFileText.Insert(0, Environment.NewLine);
                         modelIndexList.Add(modelIndex);
                     }
 
@@ -608,7 +673,7 @@ namespace Volo.Abp.Cli.Commands
                 modelFileText.AppendLine("}");
             }
 
-            File.WriteAllText($"src/app/{rootPath}/shared/models/{typeModelName}", modelFileText.ToString());
+            File.WriteAllText(output + $"{outputPrefix}/{rootPath}/{controllerPathName}/models/{typeModelName}", modelFileText.ToString());
 
             return typeModelName.Replace(".ts", "");
         }
@@ -714,6 +779,11 @@ namespace Volo.Abp.Cli.Commands
             {
                 public const string Short = "u";
                 public const string Long = "ui";
+            }
+            public static class Output
+            {
+                public const string Short = "o";
+                public const string Long = "out";
             }
         }
     }

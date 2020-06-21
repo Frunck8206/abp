@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Shouldly;
 using Volo.Abp.Localization.TestResources.Base.CountryNames;
@@ -73,6 +72,11 @@ namespace Volo.Abp.Localization
                 _localizer["Car"].Value.ShouldBe("Auto");
             }
 
+            using (CultureHelper.Use("de"))
+            {
+                _localizer["Car"].Value.ShouldBe("Auto");
+            }
+
         }
 
         [Fact]
@@ -96,6 +100,11 @@ namespace Volo.Abp.Localization
             using (CultureHelper.Use("es"))
             {
                 _localizer["SeeYou"].Value.ShouldBe("Nos vemos");
+            }
+
+            using (CultureHelper.Use("de"))
+            {
+                _localizer["SeeYou"].Value.ShouldBe("Bis bald");
             }
 
         }

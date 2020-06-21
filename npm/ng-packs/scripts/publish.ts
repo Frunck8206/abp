@@ -22,17 +22,27 @@ const publish = async () => {
   const registry = program.preview ? 'http://localhost:4873' : 'https://registry.npmjs.org';
 
   try {
-    await execa('yarn', ['install-new-dependencies'], { stdout: 'inherit' });
+    await execa('yarn', ['install'], { stdout: 'inherit', cwd: '../' });
 
     await fse.rename('../lerna.version.json', '../lerna.json');
 
     await execa(
       'yarn',
-      ['lerna', 'version', program.nextVersion, '--yes', '--no-commit-hooks', '--skip-git'],
+      [
+        'lerna',
+        'version',
+        program.nextVersion,
+        '--yes',
+        '--no-commit-hooks',
+        '--skip-git',
+        '--force-publish',
+      ],
       { stdout: 'inherit', cwd: '../' },
     );
 
     await fse.rename('../lerna.json', '../lerna.version.json');
+
+    await execa('yarn', ['replace-with-tilde']);
 
     await execa('yarn', ['build', '--noInstall'], { stdout: 'inherit' });
 
