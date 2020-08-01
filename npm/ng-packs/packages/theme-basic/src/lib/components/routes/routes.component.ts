@@ -11,4 +11,8 @@ export class RoutesComponent {
   trackByFn: TrackByFunction<TreeNode<ABP.Route>> = (_, item) => item.name;
 
   constructor(public readonly routes: RoutesService) {}
+
+  isDropdown(node: TreeNode<ABP.Route>) {
+    return !node.isLeaf || this.routes.hasChildren(node.name);
+  }
 }

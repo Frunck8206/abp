@@ -9,6 +9,7 @@ export namespace ABP {
     environment: Partial<Config.Environment>;
     skipGetAppConfiguration?: boolean;
     sendNullsAsQueryParam?: boolean;
+    cultureNameToLocaleFileNameMapping?: Dictionary<string>;
   }
 
   export interface Test {
@@ -30,19 +31,16 @@ export namespace ABP {
     maxResultCount?: number;
   }
 
-  export interface Node {
+  export interface Nav {
     name: string;
     parentName?: string;
+    requiredPolicy?: string;
     order?: number;
     invisible?: boolean;
   }
 
-  export interface Nav extends Node {
-    path: string;
-    requiredPolicy?: string;
-  }
-
   export interface Route extends Nav {
+    path: string;
     layout?: eLayoutType;
     iconClass?: string;
   }

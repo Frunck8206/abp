@@ -90,9 +90,12 @@ export const CONFIG_STATE_DATA = {
     tenantId: null,
     userName: null,
     email: null,
+    roles: [],
   },
   features: {
-    values: {},
+    values: {
+      'Chat.Enable': 'True',
+    },
   },
 } as Config.State;
 
@@ -109,9 +112,9 @@ describe('ConfigState', () => {
 
   beforeEach(() => {
     spectator = createService();
-    store = spectator.get(Store);
+    store = spectator.inject(Store);
     service = spectator.service;
-    state = new ConfigState(spectator.get(HttpClient), store);
+    state = new ConfigState(spectator.inject(HttpClient), store);
   });
 
   describe('#getAll', () => {
@@ -158,6 +161,14 @@ describe('ConfigState', () => {
       );
       expect(ConfigState.getApiUrl()(CONFIG_STATE_DATA)).toEqual(
         CONFIG_STATE_DATA.environment.apis.default.url,
+      );
+    });
+  });
+
+  describe('#getFeature', () => {
+    it('should return a setting', () => {
+      expect(ConfigState.getFeature('Chat.Enable')(CONFIG_STATE_DATA)).toEqual(
+        CONFIG_STATE_DATA.features.values['Chat.Enable'],
       );
     });
   });
@@ -249,7 +260,7 @@ describe('ConfigState', () => {
         dispatchArg = a;
         return of(a);
       });
-      const httpClient = spectator.get(HttpClient);
+      const httpClient = spectator.inject(HttpClient);
       httpClient.get.andReturn(res$);
 
       state.addData({ patchState, dispatch } as any).subscribe();

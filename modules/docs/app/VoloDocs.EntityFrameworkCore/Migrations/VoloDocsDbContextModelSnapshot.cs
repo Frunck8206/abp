@@ -29,10 +29,9 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .HasColumnName("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(256)")
-                        .HasMaxLength(256);
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(256)")
@@ -77,10 +76,9 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .HasColumnName("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(256)")
-                        .HasMaxLength(256);
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
 
                     b.Property<string>("ExtraProperties")
                         .HasColumnName("ExtraProperties")
@@ -147,6 +145,81 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
                     b.ToTable("AbpRoleClaims");
                 });
 
+            modelBuilder.Entity("Volo.Abp.Identity.IdentitySecurityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(96)")
+                        .HasMaxLength(96);
+
+                    b.Property<string>("ApplicationName")
+                        .HasColumnType("nvarchar(96)")
+                        .HasMaxLength(96);
+
+                    b.Property<string>("BrowserInfo")
+                        .HasColumnType("nvarchar(512)")
+                        .HasMaxLength(512);
+
+                    b.Property<string>("ClientId")
+                        .HasColumnType("nvarchar(64)")
+                        .HasMaxLength(64);
+
+                    b.Property<string>("ClientIpAddress")
+                        .HasColumnType("nvarchar(64)")
+                        .HasMaxLength(64);
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnName("ConcurrencyStamp")
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
+
+                    b.Property<string>("CorrelationId")
+                        .HasColumnType("nvarchar(64)")
+                        .HasMaxLength(64);
+
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExtraProperties")
+                        .HasColumnName("ExtraProperties")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Identity")
+                        .HasColumnType("nvarchar(96)")
+                        .HasMaxLength(96);
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnName("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TenantName")
+                        .HasColumnType("nvarchar(64)")
+                        .HasMaxLength(64);
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserName")
+                        .HasColumnType("nvarchar(256)")
+                        .HasMaxLength(256);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Action");
+
+                    b.HasIndex("TenantId", "ApplicationName");
+
+                    b.HasIndex("TenantId", "Identity");
+
+                    b.HasIndex("TenantId", "UserId");
+
+                    b.ToTable("AbpSecurityLogs");
+                });
+
             modelBuilder.Entity("Volo.Abp.Identity.IdentityUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -162,7 +235,8 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnName("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
 
                     b.Property<DateTime>("CreationTime")
                         .HasColumnName("CreationTime")
@@ -435,7 +509,8 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnName("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
 
                     b.Property<DateTime>("CreationTime")
                         .HasColumnName("CreationTime")
@@ -592,7 +667,8 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnName("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -690,7 +766,8 @@ namespace VoloDocs.EntityFrameworkCore.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnName("ConcurrencyStamp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(40)")
+                        .HasMaxLength(40);
 
                     b.Property<string>("DefaultDocumentName")
                         .IsRequired()

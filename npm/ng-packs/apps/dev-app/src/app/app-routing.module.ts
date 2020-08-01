@@ -1,17 +1,11 @@
-import { ABP } from '@abp/ng.core';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
   {
     path: '',
+    pathMatch: 'full',
     loadChildren: () => import('./home/home.module').then(m => m.HomeModule),
-    data: {
-      routes: {
-        name: '::Menu:Home',
-        order: 1,
-      } as ABP.Route,
-    },
   },
   {
     path: 'account',

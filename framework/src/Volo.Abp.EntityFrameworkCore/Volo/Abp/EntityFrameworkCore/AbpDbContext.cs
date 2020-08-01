@@ -129,6 +129,7 @@ namespace Volo.Abp.EntityFrameworkCore
                     return EfCoreDatabaseProvider.PostgreSql;
                 case "Pomelo.EntityFrameworkCore.MySql":
                     return EfCoreDatabaseProvider.MySql;
+                case "Oracle.EntityFrameworkCore":
                 case "Devart.Data.Oracle.Entity.EFCore":
                     return EfCoreDatabaseProvider.Oracle;
                 case "Microsoft.EntityFrameworkCore.Sqlite":
@@ -486,6 +487,11 @@ namespace Volo.Abp.EntityFrameworkCore
             where TEntity : class
         {
             if (mutableEntityType.IsOwned())
+            {
+                return;
+            }
+
+            if (!typeof(IEntity).IsAssignableFrom(typeof(TEntity)))
             {
                 return;
             }

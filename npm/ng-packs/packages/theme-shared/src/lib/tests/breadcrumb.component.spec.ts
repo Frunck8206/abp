@@ -2,8 +2,15 @@ import { ABP, LocalizationPipe, RouterOutletComponent, RoutesService } from '@ab
 import { RouterModule } from '@angular/router';
 import { createRoutingFactory, SpectatorRouting, SpyObject } from '@ngneat/spectator/jest';
 import { Store } from '@ngxs/store';
+import { Subject } from 'rxjs';
 import { BreadcrumbComponent } from '../components/breadcrumb/breadcrumb.component';
 
+const mockActions = new Subject();
+const mockStore = ({
+  selectSnapshot() {
+    return true;
+  },
+} as unknown) as Store;
 const mockRoutes: ABP.Route[] = [
   { name: 'Identity', path: '/identity' },
   { name: 'Users', path: '/identity/users', parentName: 'Identity' },
@@ -19,6 +26,12 @@ describe('BreadcrumbComponent', () => {
     stubsEnabled: false,
     detectChanges: false,
     mocks: [Store],
+    providers: [
+      {
+        provide: RoutesService,
+        useFactory: () => new RoutesService(mockActions, mockStore),
+      },
+    ],
     declarations: [LocalizationPipe, BreadcrumbComponent],
     imports: [RouterModule],
     routes: [
@@ -41,8 +54,8 @@ describe('BreadcrumbComponent', () => {
 
   beforeEach(() => {
     spectator = createRouting();
-    routes = spectator.get(RoutesService);
-    store = spectator.get(Store);
+    routes = spectator.inject(RoutesService);
+    store = spectator.inject(Store);
   });
 
   it('should display the breadcrumb', async () => {
