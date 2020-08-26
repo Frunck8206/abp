@@ -26,12 +26,16 @@
             function registerClickOfReactionIcons($container) {
                 $container.find('.cms-reaction-icon').each(function () {
                     var $icon = $(this);
+                    var reactionName = $icon.attr('data-reaction-name');
+                    if ($icon.attr('data-click-action') === 'false'){
+                        return;
+                    }
                     $icon.click(function () {
                         var methodName = $icon.hasClass('cms-reaction-icon-selected') ? 'delete' : 'create';
-                        volo.cmsKit.reactions.reactionPublic[methodName](
-                            $.extend(getFilters(), {
-                                reactionName: $icon.attr('data-reaction-name')
-                            })
+                        volo.cmsKit.public.reactions.reactionPublic[methodName](
+                            $reactionArea.attr('data-entity-type'),
+                            $reactionArea.attr('data-entity-id'),
+                            reactionName
                         ).then(function () {
                             $selectIcon.popover('hide');
                             widgetManager.refresh($widget);

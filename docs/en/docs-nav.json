@@ -4,21 +4,16 @@
       "text": "Getting Started",
       "items": [
         {
-          "text": "From Startup Templates",
+          "text": "Web Application",
           "path": "Getting-Started.md"
         },
         {
-          "text": "From Empty Projects",
-          "items": [
-            {
-              "text": "With ASP.NET Core Web Application",
-              "path": "Getting-Started-AspNetCore-Application.md"
-            },
-            {
-              "text": "With Console Application",
-              "path": "Getting-Started-Console-Application.md"
-            }
-          ]
+          "text": "Console Application",
+          "path": "Startup-Templates/Console.md"
+        },
+        {
+          "text": "Empty Web Project",
+          "path": "Getting-Started-AspNetCore-Application.md"
         }
       ]
     },
@@ -92,10 +87,6 @@
               "path": "Customizing-Application-Modules-Overriding-User-Interface.md"
             }
           ]
-        },
-        {
-          "text": "\"How to\" Guides",
-          "path": "How-To/Index.md"
         },
         {
           "text": "Migrating from the ASP.NET Boilerplate",
@@ -224,6 +215,19 @@
           "path": "Object-To-Object-Mapping.md"
         },
         {
+          "text": "Email Sending",
+          "items": [
+            {
+              "text": "Email Sending System",
+              "path": "Emailing.md",
+            },
+            {
+              "text": "MailKit Integration",
+              "path": "MailKit.md",
+            }
+          ]
+        },
+        {
           "text": "BLOB Storing",
           "items": [
             {
@@ -262,7 +266,7 @@
                   "path": "Blob-Storing-Custom-Provider.md"
                 }
               ]
-            }            
+            }
           ]
         },
         {
@@ -434,6 +438,10 @@
             {
               "text": "Permission Management",
               "path": "UI/Angular/Permission-Management.md"
+            },
+            {
+              "text": "Multi Tenancy",
+              "path": "UI/Angular/Multi-Tenancy.md"
             },
             {
               "text": "Confirmation Popup",
@@ -655,6 +663,10 @@
     {
       "text": "Microservice Architecture",
       "path": "Microservice-Architecture.md"
+    },
+    {
+      "text": "Preview Releases",
+      "path": "Previews.md"
     },
     {
       "text": "Nightly Builds",

@@ -1,13 +1,14 @@
 ﻿@page
 @using Localization.Resources.AbpUi
 @using Microsoft.Extensions.Localization
+@using Volo.Abp.GlobalFeatures
+@using Volo.CmsKit.GlobalFeatures
 @using Volo.CmsKit.Pages
-@using Volo.CmsKit.Web.Pages.CmsKit.Shared.Components.ReactionSelection
+@using Volo.CmsKit.Public.Web.Pages.CmsKit.Shared.Components.Commenting
+@using Volo.CmsKit.Public.Web.Pages.CmsKit.Shared.Components.ReactionSelection
 @model IndexModel
 @inject IStringLocalizer<AbpUiResource> Localizer
 <h1>CMS Kit DEMO</h1>
-
-<h2>Reactions</h2>
 
 <abp-card class="mb-3">
     <abp-card-body>
@@ -21,7 +22,15 @@
         </abp-blockquote>
     </abp-card-body>
     <abp-card-footer>
-        @await Component.InvokeAsync(typeof(ReactionSelectionViewComponent), new { entityType = "quote", entityId = "1" })
+        @if (GlobalFeatureManager.Instance.IsEnabled<ReactionsFeature>())
+        {
+            @await Component.InvokeAsync(typeof(ReactionSelectionViewComponent), new {entityType = "quote", entityId = "1"})
+            <hr/>
+        }
+        @if (GlobalFeatureManager.Instance.IsEnabled<CommentsFeature>())
+        {
+            @await Component.InvokeAsync(typeof(CommentingViewComponent), new {entityType = "quote", entityId = "1"})
+        }
     </abp-card-footer>
 </abp-card>
 
@@ -37,6 +46,14 @@
         </abp-blockquote>
     </abp-card-body>
     <abp-card-footer>
-        @await Component.InvokeAsync(typeof(ReactionSelectionViewComponent), new { entityType = "quote", entityId = "2" })
+        @if (GlobalFeatureManager.Instance.IsEnabled<ReactionsFeature>())
+        {
+            @await Component.InvokeAsync(typeof(ReactionSelectionViewComponent), new { entityType = "quote", entityId = "2" })
+            <hr />
+        }
+        @if (GlobalFeatureManager.Instance.IsEnabled<CommentsFeature>())
+        {
+            @await Component.InvokeAsync(typeof(CommentingViewComponent), new { entityType = "quote", entityId = "2" })
+        }
     </abp-card-footer>
 </abp-card>
