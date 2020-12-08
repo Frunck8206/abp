@@ -1,4 +1,3 @@
-import { strings } from '@angular-devkit/core';
 import { SYSTEM_TYPES } from '../constants';
 import { VOLO_REGEX } from '../constants/volo';
 import { eImportKeyword } from '../enums';
@@ -8,20 +7,35 @@ import { relativePathToEnum, relativePathToModel } from './path';
 import { parseGenerics } from './tree';
 
 export function createTypeSimplifier() {
-  const parseType = createTypeParser(type => {
-    type = type.replace(
+  const parseType = createTypeParser(t => {
+    let type = t.replace(
       /System\.([0-9A-Za-z.]+)/g,
-      (_, match) => SYSTEM_TYPES.get(match) ?? strings.camelize(match),
+      (_, match) => SYSTEM_TYPES.get(match) ?? 'any',
     );
-    return type.split('.').pop()!;
+
+    type = /any</.test(type) ? 'any' : type;
+
+    const regexp = new RegExp(/.*(?<=\.)(?<generic>.+)<.*(?<=[\.<])(?<genericType>.+)>/gm);
+    const { generic, genericType } = regexp.exec(type)?.groups ?? {};
+
+    return generic
+      ? generic === 'any'
+        ? 'any'
+        : `${generic}<${genericType}>`
+      : type.split('.').pop()!;
   });
-  return (type: string) => parseType(type).join(' | ');
+
+  return (type: string) => {
+    const parsed = parseType(type);
+    const last = parsed.pop()!;
+    return parsed.reduceRight((record, tKey) => `Record<${tKey}, ${record}>`, last);
+  };
 }
 
 export function createTypeParser(replacerFn = (t: string) => t) {
   const normalizeType = createTypeNormalizer(replacerFn);
 
-  return (originalType: string) => flattenUnionTypes([], originalType).map(normalizeType);
+  return (originalType: string) => flattenDictionaryTypes([], originalType).map(normalizeType);
 }
 
 export function createTypeNormalizer(replacerFn = (t: string) => t) {
@@ -32,14 +46,10 @@ export function createTypeNormalizer(replacerFn = (t: string) => t) {
   };
 }
 
-export function flattenUnionTypes(types: string[], type: string) {
+export function flattenDictionaryTypes(types: string[], type: string) {
   type
-    .replace(/^{/, '')
-    .replace(/}$/, '')
-    .replace(/{/, '(')
-    .replace(/}/, ')')
+    .replace(/[}{]/g, '')
     .split(':')
-    .filter(Boolean)
     .forEach(t => types.push(t));
 
   return types;
@@ -48,6 +58,10 @@ export function flattenUnionTypes(types: string[], type: string) {
 export function normalizeTypeAnnotations(type: string) {
   type = type.replace(/\[(.+)+\]/g, '$1[]');
   return type.replace(/\?/g, '');
+}
+
+export function removeGenerics(type: string) {
+  return type.replace(/<.+>/g, '');
 }
 
 export function removeTypeModifiers(type: string) {

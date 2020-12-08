@@ -91,7 +91,7 @@
   </div>
 </div>
 
-<abp-modal [(visible)]="isModalVisible" [busy]="modalBusy" (disappear)="form = null">
+<abp-modal size="md" [(visible)]="isModalVisible" [busy]="modalBusy" (disappear)="form = null">
   <ng-template #abpHeader>
     <h3>{{ (selected?.id ? 'AbpIdentity::Edit' : 'AbpIdentity::NewUser') | abpLocalization }}</h3>
   </ng-template>
@@ -167,18 +167,6 @@
               />
               <label class="custom-control-label" for="lockout-checkbox">{{
                 'AbpIdentity::DisplayName:LockoutEnabled' | abpLocalization
-              }}</label>
-            </div>
-
-            <div class="custom-checkbox custom-control mb-2">
-              <input
-                type="checkbox"
-                id="two-factor-checkbox"
-                class="custom-control-input"
-                formControlName="twoFactorEnabled"
-              />
-              <label class="custom-control-label" for="two-factor-checkbox">{{
-                'AbpIdentity::DisplayName:TwoFactorEnabled' | abpLocalization
               }}</label>
             </div>
           </ng-template>
