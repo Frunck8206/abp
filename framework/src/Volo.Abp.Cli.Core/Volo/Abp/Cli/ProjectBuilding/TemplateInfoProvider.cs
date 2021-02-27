@@ -8,6 +8,7 @@ using Volo.Abp.Cli.Http;
 using Volo.Abp.Cli.ProjectBuilding.Building;
 using Volo.Abp.Cli.ProjectBuilding.Templates.App;
 using Volo.Abp.Cli.ProjectBuilding.Templates.Console;
+using Volo.Abp.Cli.ProjectBuilding.Templates.Microservice;
 using Volo.Abp.Cli.ProjectBuilding.Templates.MvcModule;
 using Volo.Abp.Cli.ProjectBuilding.Templates.Wpf;
 using Volo.Abp.DependencyInjection;
@@ -23,13 +24,17 @@ namespace Volo.Abp.Cli.ProjectBuilding
         public IRemoteServiceExceptionHandler RemoteServiceExceptionHandler { get; }
         public AuthService AuthService { get; }
 
+        private readonly CliHttpClientFactory _cliHttpClientFactory;
+
         public TemplateInfoProvider(ICancellationTokenProvider cancellationTokenProvider,
             IRemoteServiceExceptionHandler remoteServiceExceptionHandler,
-            AuthService authService)
+            AuthService authService,
+            CliHttpClientFactory cliHttpClientFactory)
         {
             CancellationTokenProvider = cancellationTokenProvider;
             RemoteServiceExceptionHandler = remoteServiceExceptionHandler;
             AuthService = authService;
+            _cliHttpClientFactory = cliHttpClientFactory;
 
             Logger = NullLogger<TemplateInfoProvider>.Instance;
         }
@@ -49,6 +54,10 @@ namespace Volo.Abp.Cli.ProjectBuilding
                     return new AppTemplate();
                 case AppProTemplate.TemplateName:
                     return new AppProTemplate();
+                case MicroserviceProTemplate.TemplateName:
+                    return new MicroserviceProTemplate();
+                case MicroserviceServiceProTemplate.TemplateName:
+                    return new MicroserviceServiceProTemplate();
                 case ModuleTemplate.TemplateName:
                     return new ModuleTemplate();
                 case ModuleProTemplate.TemplateName:
@@ -73,14 +82,10 @@ namespace Volo.Abp.Cli.ProjectBuilding
             try
             {
                 var url = $"{CliUrls.WwwAbpIo}api/license/check-user";
+                var client = _cliHttpClientFactory.CreateClient();
 
-                using (var client = new CliHttpClient())
+                using (var response = await client.GetHttpResponseMessageWithRetryAsync(url, CancellationTokenProvider.Token, Logger))
                 {
-                    var response = await client.GetHttpResponseMessageWithRetryAsync(
-                        url,
-                        CancellationTokenProvider.Token,
-                        Logger);
-
                     if (!response.IsSuccessStatusCode)
                     {
                         throw new Exception($"ERROR: Remote server returns '{response.StatusCode}'");
@@ -89,9 +94,7 @@ namespace Volo.Abp.Cli.ProjectBuilding
                     await RemoteServiceExceptionHandler.EnsureSuccessfulHttpResponseAsync(response);
 
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<bool>(responseContent);
-
-                    return result;
+                    return JsonSerializer.Deserialize<bool>(responseContent);
                 }
             }
             catch (Exception)

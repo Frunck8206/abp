@@ -128,6 +128,7 @@ namespace MyCompanyName.MyProjectName
                 options.Languages.Add(new LanguageInfo("ar", "ar", "العربية"));
                 options.Languages.Add(new LanguageInfo("cs", "cs", "Čeština"));
                 options.Languages.Add(new LanguageInfo("en", "en", "English"));
+                options.Languages.Add(new LanguageInfo("en-GB", "en-GB", "English (UK)"));
                 options.Languages.Add(new LanguageInfo("fr", "fr", "Français"));
                 options.Languages.Add(new LanguageInfo("hu", "hu", "Magyar"));
                 options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
@@ -187,6 +188,7 @@ namespace MyCompanyName.MyProjectName
             }
 
             app.UseAbpRequestLocalization();
+            app.UseAbpSecurityHeaders();
 
             if (!env.IsDevelopment())
             {
@@ -207,17 +209,19 @@ namespace MyCompanyName.MyProjectName
             app.UseAuthorization();
 
             app.UseSwagger();
-            app.UseSwaggerUI(options =>
+            app.UseAbpSwaggerUI(options =>
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "MyProjectName API");
 
                 var configuration = context.GetConfiguration();
                 options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
                 options.OAuthClientSecret(configuration["AuthServer:SwaggerClientSecret"]);
+                options.OAuthScopes("MyProjectName");
             });
 
             app.UseAuditing();
             app.UseAbpSerilogEnrichers();
+            app.UseUnitOfWork();
             app.UseConfiguredEndpoints();
         }
     }

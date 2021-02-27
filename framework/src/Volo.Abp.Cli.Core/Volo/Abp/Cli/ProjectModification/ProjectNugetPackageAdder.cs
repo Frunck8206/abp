@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Volo.Abp.Cli.Args;
+using Volo.Abp.Cli.Commands;
 using Volo.Abp.Cli.Http;
 using Volo.Abp.Cli.ProjectBuilding;
 using Volo.Abp.Cli.Utils;
@@ -19,6 +21,7 @@ namespace Volo.Abp.Cli.ProjectModification
     public class ProjectNugetPackageAdder : ITransientDependency
     {
         public ILogger<ProjectNugetPackageAdder> Logger { get; set; }
+        public BundleCommand BundleCommand { get; }
 
         protected IJsonSerializer JsonSerializer { get; }
         protected ProjectNpmPackageAdder NpmPackageAdder { get; }
@@ -26,18 +29,24 @@ namespace Volo.Abp.Cli.ProjectModification
         protected ModuleClassDependcyAdder ModuleClassDependcyAdder { get; }
         protected IRemoteServiceExceptionHandler RemoteServiceExceptionHandler { get; }
 
+        private readonly CliHttpClientFactory _cliHttpClientFactory;
+
         public ProjectNugetPackageAdder(
             IJsonSerializer jsonSerializer,
             ProjectNpmPackageAdder npmPackageAdder,
             DerivedClassFinder moduleClassFinder,
             ModuleClassDependcyAdder moduleClassDependcyAdder,
-            IRemoteServiceExceptionHandler remoteServiceExceptionHandler)
+            IRemoteServiceExceptionHandler remoteServiceExceptionHandler,
+            BundleCommand bundleCommand, 
+            CliHttpClientFactory cliHttpClientFactory)
         {
             JsonSerializer = jsonSerializer;
             NpmPackageAdder = npmPackageAdder;
             ModuleClassFinder = moduleClassFinder;
             ModuleClassDependcyAdder = moduleClassDependcyAdder;
             RemoteServiceExceptionHandler = remoteServiceExceptionHandler;
+            BundleCommand = bundleCommand;
+            _cliHttpClientFactory = cliHttpClientFactory;
             Logger = NullLogger<ProjectNugetPackageAdder>.Instance;
         }
 
@@ -50,14 +59,14 @@ namespace Volo.Abp.Cli.ProjectModification
             );
         }
 
-        public Task AddAsync(string projectFile, NugetPackageInfo package, string version = null,
+        public async Task AddAsync(string projectFile, NugetPackageInfo package, string version = null,
             bool useDotnetCliToInstall = true)
         {
             var projectFileContent = File.ReadAllText(projectFile);
 
             if (projectFileContent.Contains($"\"{package.Name}\""))
             {
-                return Task.CompletedTask;
+                return;
             }
 
             if (version == null)
@@ -94,11 +103,14 @@ namespace Volo.Abp.Cli.ProjectModification
                 }
 
                 ModuleClassDependcyAdder.Add(moduleFiles.First(), package.ModuleClass);
-
-                Logger.LogInformation("Successfully installed.");
             }
 
-            return Task.CompletedTask;
+            if (package.Target == NuGetPackageTarget.Blazor)
+            {
+                await RunBundleForBlazorAsync(projectFile);
+            }
+
+            Logger.LogInformation("Successfully installed.");
         }
 
         private Task AddUsingDotnetCli(NugetPackageInfo package, string version = null)
@@ -113,7 +125,7 @@ namespace Volo.Abp.Cli.ProjectModification
         private Task AddToCsprojManuallyAsync(string projectFile, NugetPackageInfo package, string version = null)
         {
             var projectFileContent = File.ReadAllText(projectFile);
-            var doc = new XmlDocument() {PreserveWhitespace = true};
+            var doc = new XmlDocument() { PreserveWhitespace = true };
             doc.Load(StreamHelper.GenerateStreamFromString(projectFileContent));
 
             var itemGroupNodes = doc.SelectNodes("/Project/ItemGroup");
@@ -154,7 +166,7 @@ namespace Volo.Abp.Cli.ProjectModification
 
         private string GetAbpVersionOrNull(string projectFileContent)
         {
-            var doc = new XmlDocument() {PreserveWhitespace = true};
+            var doc = new XmlDocument() { PreserveWhitespace = true };
 
             doc.Load(StreamHelper.GenerateStreamFromString(projectFileContent));
 
@@ -165,12 +177,11 @@ namespace Volo.Abp.Cli.ProjectModification
 
         protected virtual async Task<NugetPackageInfo> FindNugetPackageInfoAsync(string packageName)
         {
-            using (var client = new CliHttpClient())
+            var url = $"{CliUrls.WwwAbpIo}api/app/nugetPackage/byName/?name=" + packageName;
+            var client = _cliHttpClientFactory.CreateClient();
+
+            using (var response = await client.GetAsync(url, _cliHttpClientFactory.GetCancellationToken()))
             {
-                var url = $"{CliUrls.WwwAbpIo}api/app/nugetPackage/byName/?name=" + packageName;
-
-                var response = await client.GetAsync(url);
-
                 if (!response.IsSuccessStatusCode)
                 {
                     if (response.StatusCode == HttpStatusCode.NotFound)
@@ -184,6 +195,16 @@ namespace Volo.Abp.Cli.ProjectModification
                 var responseContent = await response.Content.ReadAsStringAsync();
                 return JsonSerializer.Deserialize<NugetPackageInfo>(responseContent);
             }
+        }
+
+        protected virtual async Task RunBundleForBlazorAsync(string projectFile)
+        {
+            var args = new CommandLineArgs("bundle");
+
+            args.Options.Add(BundleCommand.Options.WorkingDirectory.Short, Path.GetDirectoryName(projectFile));
+            args.Options.Add(BundleCommand.Options.ForceBuild.Short, string.Empty);
+
+            await BundleCommand.ExecuteAsync(args);
         }
     }
 }
